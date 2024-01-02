@@ -39,7 +39,7 @@ async create(data){
 
  createToken(user){
     try {
-        const result = jwt.sign(user ,JWT_KEY,{expiresIn: '30'});
+        const result = jwt.sign(user ,JWT_KEY,{expiresIn: '1h'});
         return result;
     } catch (error) {
         console.log("something went wrong in token creation");
@@ -64,6 +64,23 @@ verifyToken(token) {
         } catch (error) {
             console.log("something went wrong in password comparison");
         throw error;
+        }
+     }
+
+     async isAuthenticated(token){
+        try {
+           const response = this.verifyToken(token);
+           if(!response){
+            throw{erorr: 'invalid token'}
+           }
+           const user = this.userRepository.getByID(response.id);
+           if(!user){
+            throw {error : 'no user with corrosponding id exists'}
+           }
+           return user.id;
+        } catch (error) {
+            console.log("something went wrong in auth");
+            throw error;
         }
      }
 
