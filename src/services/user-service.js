@@ -73,7 +73,7 @@ verifyToken(token) {
            if(!response){
             throw{erorr: 'invalid token'}
            }
-           const user = this.userRepository.getByID(response.id);
+           const user = await this.userRepository.getByID(response.id);
            if(!user){
             throw {error : 'no user with corrosponding id exists'}
            }
