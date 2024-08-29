@@ -2,6 +2,8 @@ const  UserRepository  = require('../repository/user-repository');
 const jwt = require('jsonwebtoken')
 const {JWT_KEY  } = require('../config/serverConfig');
 const bcrypt = require('bcrypt');
+const AppError = require('../utils/error-handler');
+const { StatusCodes } = require('http-status-codes');
 
 class UserService {
 constructor(){
@@ -10,11 +12,17 @@ constructor(){
 async create(data){
 
     try {
+
         const user = await this.userRepository.create(data);
         return user;
+
     } catch (error) {
+        console.log(error);
+        if(error.name == 'SequelizeValidationError' ) {
+            throw error;
+        }
         console.log("something went wrong in service layer ");
-        throw error;
+        
     }
 }
 
@@ -22,16 +30,20 @@ async create(data){
         try {
             
             const user = await this.userRepository.getByEmail(email); // fetch the user using email
-            const passwordsMatch =  this.checkPassword(plainPassword,user.password);//compare plain and encrypted passwords
+            const passwordsMatch =  await this.checkPassword(plainPassword,user.password);//compare plain and encrypted passwords
             if(!passwordsMatch){
                 console.log("password doesn't match");
-                throw {error : 'incorrect password'}
+                throw {error : 'incorrect password',        }
             }
 
             const newJWT = this.createToken({email: user.email, id: user.id});
             return newJWT;
             
         } catch (error) {
+            console.log("SERVICE" ,error);
+            if(error.name == 'AttributeNotFound'){
+                throw error;
+            }
             console.log("something went wrong in signIn");
             throw error;
         }
@@ -57,9 +69,9 @@ verifyToken(token) {
     }
 }
 
-     checkPassword(userInputPlainPassword, encryptedPassword){
+     async checkPassword(userInputPlainPassword, encryptedPassword){
         try {
-            return bcrypt.compareSync(userInputPlainPassword,encryptedPassword);
+            return  bcrypt.compareSync(userInputPlainPassword,encryptedPassword);
             
         } catch (error) {
             console.log("something went wrong in password comparison");
@@ -82,6 +94,15 @@ verifyToken(token) {
             console.log("something went wrong in auth");
             throw error;
         }
+     }
+
+     isAdmin(userId){
+            try {
+                return this.userRepository.isAdmin(userId);
+            } catch (error) {
+                console.log("something went wrong in service layer");
+            throw error;
+            }
      }
 
 }
